@@ -1,0 +1,49 @@
+- name: create ec2 instance and route 53 records
+  hosts: local
+  connection: local
+  vars:
+    sg_id: "sg-057e215dc23486bf8"
+    ami_id: "ami-0055977a6e828a4f4"
+    zone_id: "Z0498907312QP9JRHN116"
+    domain_name: "wasdaws.cyou"
+
+# commenting the below as I wish to pass instances from cmd using -e
+    # instances: 
+    # - mongodb
+    # - redis
+    # - catalogue
+
+  tasks:
+  - name: create an ec2-instance
+    amazon.aws.ec2_instance:
+      name: "{{item}}"      
+      instance_type: "t3.micro"
+      security_group: "{{sg_id}}"
+      image_id: "{{ ami_id }}"
+      tags:
+        name: "{{item}}"
+    loop: "{{ instances}}"
+    register: ec2_output
+  
+  - name: Add route53 record  
+    amazon.aws.route53:
+      state: present
+      zone: "{{ domain_name }}"
+      record: "{{item.item}}.{{ domain_name }}" # mongodb.wasdaws.cyou
+      type: A
+      ttl: 1
+      value: "{{ item.instances[0].private_ip_address }}"
+      overwrite: true 
+    loop: "{{ ec2_output.results }}"
+
+  - name: Add route53 record  
+    amazon.aws.route53:
+      state: present
+      zone: "{{ domain_name }}"
+      record: "{{ domain_name }}" # mongodb.wasdaws.cyou
+      type: A
+      ttl: 1
+      value: "{{ item.instances[0].public_ip_address }}"
+      overwrite: true 
+    when: item.item == "frontend"
+    loop: "{{ ec2_output.results }}"

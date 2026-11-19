@@ -1,0 +1,17 @@
+  - name: install maven and mysql
+    ansible.builtin.dnf:
+      name: "{{item}}"
+      state: present
+    loop:
+    - maven
+    - mysql
+
+  - name: run maven package by moving to /app dir
+    ansible.builtin.command: mvn clean package
+    args:
+      chdir: /app  
+
+  - name: move {{component}} jar file form target to /app dir
+    ansible.builtin.command: mv target/{{component}}-{{version}}.jar {{component}}.jar 
+    args:
+      chdir: /app

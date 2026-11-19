@@ -1,0 +1,40 @@
+  - name: app-setup
+    ansible.builtin.include_role:
+      name: common
+      tasks_from: app-setup.yaml
+      tags:
+      - run2
+    # ansible-playbook main.yaml -e "component=catalogue" -t run2
+  
+  - name: nodejs setup
+    ansible.builtin.include_role:
+      name: common
+      tasks_from: nodejs-setup.yaml  
+    tags: 
+    - run2
+
+  - name: copy mongo repo
+    ansible.builtin.copy:
+      src: mongo.repo
+      dest: /etc/yum.repos.d/mongo.repo
+  
+  - name: install mongodb-mongosh client
+    ansible.builtin.package:
+      name: mongodb-mongosh
+      state: present
+  
+  - name: evalute catalogue products loaded in mongodb
+    ansible.builtin.command: mongosh mongodb.wasdaws.cyou  --quiet --eval "db.getMongo().getDBNames().indexOf('catalogue')"
+    register: catalogue_output
+  
+  - name: load catalogue products into mongodb
+    ansible.builtin.shell: mongosh --host mongodb.wasdaws.cyou </app/db/master-data.js
+    when: catalogue_output.stdout | int < 0
+  
+  - name: copy service, daemon-relaod, start and enable service # start for 1st time run and restart 2nd run so safe to use state: restarted
+    ansible.builtin.import_role:
+      name: common
+      tasks_from: system-setup.yaml
+ 
+ 
+      

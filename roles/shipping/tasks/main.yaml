@@ -1,0 +1,36 @@
+  - name: app setup
+    ansible.builtin.import_role:
+      name: common
+      tasks_from: app-setup.yaml
+  
+  - name: install maven, run mvn clean and copy jar to /app folder
+    ansible.builtin.import_role:
+      name: common
+      tasks_from: java.yaml
+
+  - name: install pymysql and cryptography using pip
+    ansible.builtin.pip:
+      name: "{{item}}"
+      executable: pip3.9
+    loop:
+    - PyMySQL
+    - cryptography  
+  
+  - name: import data into mysql
+    community.mysql.mysql_db:
+      state: import
+      name: all
+      login_host: "{{MYSQL_HOST}}"
+      login_user: "{{MYSQL_ROOT_USER}}"
+      login_password: "{{MYSQL_ROOT_PASSWORD}}"
+      target: "{{ item }}"
+    loop:
+    - /app/db/schema.sql
+    - /app/db/app-user.sql 
+    - /app/db/master-data.sql
+
+  - name: copy service, daemon-reload, enable and start service
+    ansible.builtin.import_role:
+      name: common
+      tasks_from: system-setup.yaml
+      

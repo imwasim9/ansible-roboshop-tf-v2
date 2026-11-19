@@ -1,0 +1,42 @@
+  - name: create system user
+    ansible.builtin.user:
+      name: roboshop
+      system: true
+      shell: /sbin/nologin
+      home: /app
+
+  - name: remove zip file if already exists
+    ansible.builtin.file:
+      path: /tmp/{{ component }}.zip
+      state: absent
+    tags: 
+    - run2
+
+  - name: download {{ component }} application always for new updates if any
+    ansible.builtin.get_url:
+      url: https://roboshop-artifacts.s3.amazonaws.com/{{ component }}-v3.zip
+      dest: /tmp/{{ component }}.zip
+    tags: 
+    - run2
+  
+  - name: remove app directory if exists
+    ansible.builtin.file:
+      path: /app
+      state: absent
+    tags: 
+    - run2
+  
+  - name: create app directory
+    ansible.builtin.file:
+      path: /app
+      state: directory
+    tags: 
+    - run2
+
+  - name: extract {{ component }} application
+    ansible.builtin.unarchive:
+      src: /tmp/{{ component }}.zip
+      dest: /app
+      remote_src: yes
+    tags: 
+    - run2
