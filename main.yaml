@@ -1,6 +1,7 @@
 - name: "install and configure {{ component }}"
-  hosts: "dynamic_{{ component }}"
-  # hosts: "{{ component }}"
+  # hosts: "dynamic_{{ component }}"
+  hosts: "{{ component }}"
+  connection: local
   become: yes
   roles:
   - "{{ component }}"
